@@ -1,0 +1,24 @@
+// {
+//   "compilerOptions": {
+//     "module": "ESNext",
+//     "moduleResolution": "bundler",
+//     "target": "ES2023",
+//     "strict": true,
+//     "esModuleInterop": true,
+//     "ignoreDeprecations": "6.0"
+//   }
+// }
+{
+  "compilerOptions": {
+    "rootDirs": ["src"],
+    "outDir": "dist",
+    "lib": ["es2023", "dom"],
+    "target": "es2023",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "types": ["node"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}
