@@ -15,6 +15,9 @@ export class CreateCategoryInput {
 @InputType()
 export class UpdateCategoryInput {
   @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
   name!: string;
 
   @Field(() => String)
@@ -22,4 +25,10 @@ export class UpdateCategoryInput {
 
   @Field(() => String)
   symbol!: string;
+}
+
+@InputType()
+export class DeleteCategory {
+  @Field(() => String)
+  id!: string;
 }

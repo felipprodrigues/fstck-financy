@@ -18,6 +18,9 @@ export class CreateTransactionInput {
 @InputType()
 export class UpdateTransactionInput {
   @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
   type!: string;
 
   @Field(() => String)
@@ -27,5 +30,5 @@ export class UpdateTransactionInput {
   cashFlow!: number;
 
   @Field(() => String)
-  category!: string;
+  categoryId!: string
 }

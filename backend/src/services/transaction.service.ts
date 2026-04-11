@@ -4,7 +4,7 @@
 // Deve ser possível listar todas as transações
 
 import { prismaClient } from "../../prisma/prisma";
-import { CreateTransactionInput } from "../dtos/input/transaction.input";
+import { CreateTransactionInput, UpdateTransactionInput } from "../dtos/input/transaction.input";
 
 export class TransactionService {
   async createTransaction(data: CreateTransactionInput, userId: string) {
@@ -29,6 +29,52 @@ export class TransactionService {
         userId
       }
     })
+  }
 
+  async updateTransaction(data: UpdateTransactionInput, userId: string) {
+    if(!userId) throw new Error("Unauthorized")
+    if(!data) throw new Error("Cant process request")
+
+    const {
+      cashFlow,
+      id,
+      description,
+      type,
+      categoryId
+    } = data
+
+    if(!cashFlow || !id || !description || !type || !categoryId) throw new Error("Transaction data is incomplete. Please provide type, description, cashFlow and category")
+
+    const transaction = await prismaClient.transactions.findUnique({ where: { id } })
+    if(!transaction || transaction.userId !== userId) throw new Error("Transaction not found")
+
+    return prismaClient.transactions.update({
+      where: { id },
+      data: { cashFlow, description, type, categoryId }
+    })
+  }
+
+  async deleteTransaction(transactionId: string, userId: string) {
+    const transaction = await prismaClient.transactions.findUnique({ where: { id: transactionId } })
+    if(!transaction || transaction.userId !== userId) throw new Error("Transaction not found")
+
+    await prismaClient.transactions.delete({ where: { id: transactionId } })
+
+    return true
+  }
+
+  async findAllTransactions(userId: string) {
+    return prismaClient.transactions.findMany({ where: { userId } })
+  }
+
+  async findTransactionById(categoryId: string, userId: string) {
+    if(!categoryId) throw new Error("Transaction not found")
+    if(!userId) throw new Error("Unauthenticated")
+
+    return prismaClient.transactions.findUnique({
+      where: {
+        id: categoryId
+      }
+    })
   }
 }
