@@ -50,7 +50,7 @@ export class AuthService {
     const token = signJwt({
       id: user.id,
       email: user.email
-    }, "30min")
+    }, "1d")
 
     const refreshToken = signJwt({
       id: user.id,

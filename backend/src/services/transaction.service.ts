@@ -15,7 +15,8 @@ export class TransactionService {
       cashFlow,
       categoryId,
       description,
-      type
+      type,
+      date
     } = data
 
     if(!cashFlow || !categoryId || !description || !type) throw new Error("Transaction data is incomplete. Please provide type, description, cashFlow and category")
@@ -26,7 +27,8 @@ export class TransactionService {
         categoryId,
         description,
         type,
-        userId
+        userId,
+        ...(date ? { createdAt: new Date(date) } : {})
       }
     })
   }
@@ -40,7 +42,8 @@ export class TransactionService {
       id,
       description,
       type,
-      categoryId
+      categoryId,
+      date
     } = data
 
     if(!cashFlow || !id || !description || !type || !categoryId) throw new Error("Transaction data is incomplete. Please provide type, description, cashFlow and category")
@@ -50,7 +53,13 @@ export class TransactionService {
 
     return prismaClient.transactions.update({
       where: { id },
-      data: { cashFlow, description, type, categoryId }
+      data: {
+        cashFlow,
+        description,
+        type,
+        categoryId,
+        ...(date ? { createdAt: new Date(date) } : {})
+      }
     })
   }
 

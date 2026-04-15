@@ -1,9 +1,16 @@
-import { Field, InputType } from "type-graphql";
+import { Field, InputType, registerEnumType } from "type-graphql";
+
+export enum TransactionType {
+  INCOME = "INCOME",
+  EXPENSE = "EXPENSE",
+}
+
+registerEnumType(TransactionType, { name: "TransactionType" });
 
 @InputType()
 export class CreateTransactionInput {
-  @Field(() => String)
-  type!: string;
+  @Field(() => TransactionType)
+  type!: TransactionType;
 
   @Field(() => String)
   description!: string;
@@ -13,6 +20,9 @@ export class CreateTransactionInput {
 
   @Field(() => String)
   categoryId!: string;
+
+  @Field(() => String, { nullable: true })
+  date?: string;
 }
 
 @InputType()
@@ -20,8 +30,8 @@ export class UpdateTransactionInput {
   @Field(() => String)
   id!: string;
 
-  @Field(() => String)
-  type!: string;
+  @Field(() => TransactionType)
+  type!: TransactionType;
 
   @Field(() => String)
   description?: string;
@@ -30,5 +40,8 @@ export class UpdateTransactionInput {
   cashFlow!: number;
 
   @Field(() => String)
-  categoryId!: string
+  categoryId!: string;
+
+  @Field(() => String, { nullable: true })
+  date?: string;
 }

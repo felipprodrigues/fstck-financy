@@ -20,8 +20,9 @@ input CreateCategoryInput {
 input CreateTransactionInput {
   cashFlow: Float!
   categoryId: String!
+  date: String
   description: String!
-  type: String!
+  type: TransactionType!
 }
 
 """
@@ -80,6 +81,11 @@ type TransactionOutput {
   userId: String!
 }
 
+enum TransactionType {
+  EXPENSE
+  INCOME
+}
+
 input UpdateCategoryInput {
   description: String!
   id: String!
@@ -90,9 +96,10 @@ input UpdateCategoryInput {
 input UpdateTransactionInput {
   cashFlow: Float!
   categoryId: String!
+  date: String
   description: String!
   id: String!
-  type: String!
+  type: TransactionType!
 }
 
 type UserModel {
