@@ -1,16 +1,24 @@
-import { DataTable, type ColumnDef } from '@/shared/DataTable'
-import { CategoryBadge, CategoryIconBadge } from '@/shared/CategoryBadge'
 import { Page } from '@/components/Page'
 import { Button } from '@/components/ui/button'
-import { ChevronRight, CircleArrowDown, CircleArrowUp, Plus } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import type { Category as CategorySymbol } from '@/shared/CategoryBadge'
+import { CategoryBadge, CategoryIconBadge } from '@/shared/CategoryBadge'
+import { DataTable, type ColumnDef } from '@/shared/DataTable'
+import { format } from 'date-fns'
+import { ChevronRight, CircleArrowDown, CircleArrowUp, Plus, Wallet } from 'lucide-react'
+import { useCategories } from '@/pages/Categories/useCategories'
+import { useTransactions } from '@/pages/Transactions/useTransactions'
 import { NewTransactionDialog } from '@/pages/Transactions/NewTransactionDialog'
+import type { Transaction } from '@/pages/Transactions/types'
+import { Link } from 'react-router-dom'
 import { Cards } from './Cards'
-import type { CategorySummary, Transaction } from './types'
-import { summaryCards, transactions, categories } from './MockData'
+import type { CategorySummary } from './types'
 
+interface DashboardTransaction extends Transaction {
+  categorySymbol: CategorySymbol | null
+  date: string
+}
 
-const transactionColumns: ColumnDef<Transaction>[] = [
+const transactionColumns: ColumnDef<DashboardTransaction>[] = [
   {
     key: 'description',
     label: 'Descrição',
@@ -18,31 +26,32 @@ const transactionColumns: ColumnDef<Transaction>[] = [
     cellClassName: 'w-full',
     render: (row) => (
       <div className="flex items-center gap-3">
-        <CategoryIconBadge category={row.category} />
+        {row.categorySymbol && <CategoryIconBadge category={row.categorySymbol} />}
         <div className="flex flex-col">
-          <span className="text-base font-medium text-gray-800 ">{row.description}</span>
+          <span className="text-base font-medium text-gray-800">{row.description}</span>
           <span className="text-sm text-muted-foreground">{row.date}</span>
         </div>
       </div>
     ),
   },
   {
-    key: 'category',
+    key: 'categoryId',
     label: 'Categoria',
     showHeader: false,
     cellClassName: 'text-center',
-    render: (row) => <CategoryBadge category={row.category} />,
+    render: (row) =>
+      row.categorySymbol ? <CategoryBadge category={row.categorySymbol} /> : null,
   },
   {
-    key: 'amount',
+    key: 'cashFlow',
     label: 'Valor',
     showHeader: false,
     cellClassName: 'text-right',
     render: (row) => {
-      const positive = row.amount >= 0
+      const positive = row.type === 'INCOME'
       return (
         <div className={`flex items-center justify-end gap-1 text-sm font-medium ${positive ? 'text-green-600' : 'text-red-600'}`}>
-          R$ {Math.abs(row.amount).toFixed(2).replace('.', ',')}
+          R$ {row.cashFlow.toFixed(2).replace('.', ',')}
           {positive
             ? <CircleArrowUp className="h-4 w-4" />
             : <CircleArrowDown className="h-4 w-4" />
@@ -75,12 +84,65 @@ const categoryColumns: ColumnDef<CategorySummary>[] = [
     showHeader: false,
     cellClassName: 'text-right',
     render: (row) => (
-      <span className="text-sm text-gray-800">{row.total}</span>
+      <span className="text-sm text-gray-800">
+        R$ {row.total.toFixed(2).replace('.', ',')}
+      </span>
     ),
   },
 ]
 
+function fmt(value: number) {
+  return `R$ ${value.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`
+}
+
 export function Dashboard() {
+  const { data: transactions = [] } = useTransactions()
+  const { data: categoriesArray = [] } = useCategories()
+
+  const categoriesById = Object.fromEntries(categoriesArray.map((c) => [c.id, c]))
+
+  const income = transactions
+    .filter((t) => t.type === 'INCOME')
+    .reduce((sum, t) => sum + t.cashFlow, 0)
+
+  const expenses = transactions
+    .filter((t) => t.type === 'EXPENSE')
+    .reduce((sum, t) => sum + t.cashFlow, 0)
+
+  const balance = income - expenses
+
+  const summaryCards = [
+    { title: 'Saldo total',     value: fmt(balance),   icon: Wallet,          iconColor: 'text-purple-base' },
+    { title: 'Receita do mês',  value: fmt(income),    icon: CircleArrowUp,   iconColor: 'text-brand-base'  },
+    { title: 'Despesas do mês', value: fmt(expenses),  icon: CircleArrowDown, iconColor: 'text-red-base'    },
+  ]
+
+  const dashboardTransactions: DashboardTransaction[] = transactions
+    .slice()
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 10)
+    .map((t) => {
+      const cat = categoriesById[t.categoryId]
+      return {
+        ...t,
+        categorySymbol: (cat?.symbol ?? null) as CategorySymbol | null,
+        date: format(new Date(t.createdAt), 'dd/MM/yyyy'),
+      }
+    })
+
+  const categorySummary: CategorySummary[] = Object.values(
+    categoriesArray.reduce<Record<string, CategorySummary>>((acc, cat) => {
+      const symbol = cat.symbol
+      if (!acc[symbol]) {
+        acc[symbol] = { category: symbol as CategorySymbol, name: cat.name, count: 0, total: 0 }
+      }
+      const linked = transactions.filter((t) => t.categoryId === cat.id)
+      acc[symbol].count += linked.length
+      acc[symbol].total += linked.reduce((sum, t) => sum + t.cashFlow, 0)
+      return acc
+    }, {})
+  ).sort((a, b) => b.count - a.count)
+
   return (
     <Page>
       <div className="flex flex-col gap-4">
@@ -99,7 +161,7 @@ export function Dashboard() {
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2">
             <DataTable
-              data={transactions}
+              data={dashboardTransactions}
               columns={transactionColumns}
               pagination
               pageSize={10}
@@ -125,7 +187,7 @@ export function Dashboard() {
           </div>
           <div className="col-span-1">
             <DataTable
-              data={categories}
+              data={categorySummary}
               columns={categoryColumns}
               title="CATEGORIAS"
               headerAction={

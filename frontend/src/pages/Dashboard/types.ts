@@ -1,12 +1,11 @@
 import type { Category } from '@/shared/CategoryBadge'
 import type { LucideIcon } from 'lucide-react'
 
-export type { Transaction } from '@/pages/Transactions/types'
-
 export interface CategorySummary {
   category: Category
+  name: string
   count: number
-  total: string
+  total: number
 }
 
 export interface SummaryCard {

@@ -5,16 +5,15 @@ import { Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
 import { Signup } from './pages/Signup'
 import { Transactions } from './pages/Transactions'
+import { useAuthStore } from './store/auth.store'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  // const { isAuthenticated } = useAuthStore()
-  const isAuthenticated = true
+  const { isAuthenticated } = useAuthStore()
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  // const { isAuthenticated } = useAuthStore()
-  const isAuthenticated = false
+  const { isAuthenticated } = useAuthStore()
   return !isAuthenticated ? <>{children}</> : <Navigate to="/" replace />
 }
 

@@ -1,0 +1,9 @@
+query {
+  getAllCategories {
+    id
+    name
+    description
+    symbol
+    createdAt
+  }
+}

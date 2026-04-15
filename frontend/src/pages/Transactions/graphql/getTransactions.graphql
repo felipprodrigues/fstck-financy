@@ -1,0 +1,10 @@
+query {
+  getAllTransactions {
+    id
+    type
+    description
+    cashFlow
+    categoryId
+    createdAt
+  }
+}

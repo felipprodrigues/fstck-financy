@@ -1,0 +1,10 @@
+mutation CreateTransaction($data: CreateTransactionInput!) {
+  createTransaction(data: $data) {
+    id
+    type
+    description
+    cashFlow
+    categoryId
+    createdAt
+  }
+}

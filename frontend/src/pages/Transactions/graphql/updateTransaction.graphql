@@ -1,0 +1,10 @@
+mutation UpdateTransaction($data: UpdateTransactionInput!) {
+  updateTransaction(data: $data) {
+    id
+    type
+    description
+    cashFlow
+    categoryId
+    createdAt
+  }
+}

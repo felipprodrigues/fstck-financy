@@ -16,11 +16,48 @@ import {
   InputGroupText,
 } from '@/components/ui/input-group'
 import { Separator } from '@/components/ui/separator'
+import { gqlRequest } from '@/lib/gql-client'
+import { useAuthStore } from '@/store/auth.store'
+import { useMutation } from '@tanstack/react-query'
 import { Lock, LogIn, Mail } from 'lucide-react'
+import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
+import { z } from 'zod'
+import LOGIN_MUTATION from './graphql/login.graphql?raw'
+
+const loginSchema = z.object({
+  email: z.email('Email inválido'),
+  password: z.string().min(1, 'Senha obrigatória'),
+})
+
+type LoginFormValues = z.infer<typeof loginSchema>
+
+interface LoginResponse {
+  login: {
+    token: string
+    refreshToken: string
+    user: { id: string; name: string; email: string }
+  }
+}
 
 export function Login() {
   const navigate = useNavigate()
+  const { login } = useAuthStore()
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({ mode: 'onBlur' })
+
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: (data: LoginFormValues) =>
+      gqlRequest<LoginResponse>(LOGIN_MUTATION, { data }),
+    onSuccess: ({ login: { token, refreshToken, user } }) => {
+      login(token, refreshToken, user)
+      navigate('/')
+    },
+  })
 
   return (
     <div className="flex w-full max-w-sm flex-col items-center gap-6">
@@ -31,7 +68,7 @@ export function Login() {
           <CardDescription>Entre na sua conta para continuar</CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={handleSubmit((values) => mutate(values))}>
             <div className="flex flex-col gap-6">
               <FieldGroup>
                 <Field>
@@ -42,8 +79,18 @@ export function Login() {
                         <Mail />
                       </InputGroupText>
                     </InputGroupAddon>
-                    <InputGroupInput id="login-email" placeholder="mail@example.com" />
+                    <InputGroupInput
+                      id="login-email"
+                      placeholder="mail@example.com"
+                      {...register('email', {
+                        validate: (v) =>
+                          loginSchema.shape.email.safeParse(v).success || 'Email inválido',
+                      })}
+                    />
                   </InputGroup>
+                  {errors.email && (
+                    <span className="text-xs text-red-500">{errors.email.message}</span>
+                  )}
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="login-password">Senha</FieldLabel>
@@ -57,23 +104,37 @@ export function Login() {
                       id="login-password"
                       type="password"
                       placeholder="Digite sua senha"
+                      {...register('password', {
+                        required: 'Senha obrigatória',
+                      })}
                     />
                   </InputGroup>
+                  {errors.password && (
+                    <span className="text-xs text-red-500">{errors.password.message}</span>
+                  )}
                 </Field>
                 <Field orientation="horizontal">
                   <Checkbox id="remember-me" name="remember-me" />
                   <FieldLabel htmlFor="remember-me" className="text-sm font-normal">
                     Lembrar-me
                   </FieldLabel>
-
                   <Button variant="link" className="cursor-pointer">
                     Recuperar senha
                   </Button>
                 </Field>
 
-                <Button type="submit" className="w-full py-3 px-4 h-auto" size="lg">
+                {error && (
+                  <span className="text-xs text-red-500 text-center">{error.message}</span>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full py-3 px-4 h-auto"
+                  size="lg"
+                  disabled={isPending}
+                >
                   <LogIn />
-                  Login
+                  {isPending ? 'Entrando...' : 'Login'}
                 </Button>
               </FieldGroup>
             </div>

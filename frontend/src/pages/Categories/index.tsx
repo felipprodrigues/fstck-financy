@@ -2,11 +2,13 @@ import { Page } from '@/components/Page'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/shared/PageHeader'
+import type { LucideIcon } from 'lucide-react'
 import { ArrowDownUp, Plus, Tag, Utensils } from 'lucide-react'
 import { CategoryCard } from './CategoryCard'
-import { mockCategories } from './MockData'
 import { NewCategoryDialog } from './NewCategoryDialog'
-import type { LucideIcon } from 'lucide-react'
+import { useCategories } from './useCategories'
+import { useTransactions } from '../Transactions/useTransactions'
+import type { Category } from './types'
 
 interface SummaryCardProps {
   icon: LucideIcon
@@ -31,6 +33,23 @@ function SummaryCard({ icon: Icon, value, label }: SummaryCardProps) {
 }
 
 export function Categories() {
+  const { data: categories = [], isLoading } = useCategories()
+  const { data: transactions = [] } = useTransactions()
+
+  const categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]))
+
+  const itemCountBySymbol = transactions.reduce<Record<string, number>>((acc, t) => {
+    const cat = categoriesById[t.categoryId]
+    if (!cat) return acc
+    acc[cat.symbol] = (acc[cat.symbol] ?? 0) + 1
+    return acc
+  }, {})
+
+  const mostUsed = categories.reduce<Category | null>((top, cat) => {
+    if (!top) return cat
+    return (itemCountBySymbol[cat.symbol] ?? 0) > (itemCountBySymbol[top.symbol] ?? 0) ? cat : top
+  }, null)
+
   return (
     <Page>
       <div className="flex flex-col gap-6">
@@ -51,21 +70,31 @@ export function Categories() {
         />
 
         <div className="grid grid-cols-3 gap-4">
-          <SummaryCard icon={Tag} value="10" label="TOTAL DE CATEGORIAS" />
-          <SummaryCard icon={ArrowDownUp} value="34" label="Total de transações" />
-          <SummaryCard icon={Utensils} value="Alimentação" label="Categoria mais utilizada" />
+          <SummaryCard icon={Tag} value={String(categories.length)} label="Total de categorias" />
+          <SummaryCard icon={ArrowDownUp} value={String(transactions.length)} label="Total de transações" />
+          <SummaryCard
+            icon={Utensils}
+            value={mostUsed?.name ?? '—'}
+            label="Categoria mais utilizada"
+          />
         </div>
-        <div className="grid grid-cols-3 gap-4">
-          {mockCategories.map((item) => (
-            <CategoryCard
-              key={item.category}
-              category={item.category}
-              title={item.title}
-              subtitle={item.subtitle}
-              itemCount={item.itemCount}
-            />
-          ))}
-        </div>
+
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Carregando categorias...</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            {categories.map((cat) => (
+              <CategoryCard
+                key={cat.id}
+                id={cat.id}
+                category={cat.symbol as import('@/shared/CategoryBadge').Category}
+                title={cat.name}
+                subtitle={cat.description}
+                itemCount={itemCountBySymbol[cat.symbol] ?? 0}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </Page>
   )

@@ -8,22 +8,26 @@ import {
   PawPrint,
   PiggyBank,
   ShoppingCart,
+  Tag,
   Ticket,
   ToolCase,
   Utensils,
 } from 'lucide-react'
 
-export type Category =
-  | 'food'
-  | 'entertainment'
-  | 'investment'
-  | 'grocery'
-  | 'salary'
-  | 'health'
-  | 'transport'
-  | 'utilities'
-  | 'gym'
-  | 'pet'
+export const CategorySymbol = {
+  FOOD: 'food',
+  ENTERTAINMENT: 'entertainment',
+  INVESTMENT: 'investment',
+  GROCERY: 'grocery',
+  SALARY: 'salary',
+  HEALTH: 'health',
+  TRANSPORT: 'transport',
+  UTILITIES: 'utilities',
+  GYM: 'gym',
+  PET: 'pet',
+} as const
+
+export type Category = (typeof CategorySymbol)[keyof typeof CategorySymbol]
 
 export const categoryConfig: Record<Category, { label: string; className: string; icon: LucideIcon }> = {
   salary: {
@@ -70,21 +74,27 @@ export const categoryConfig: Record<Category, { label: string; className: string
   pet: { label: 'Pet', className: 'bg-pink-100 text-pink-700 border-pink-200', icon: PawPrint },
 }
 
+const fallbackConfig = {
+  label: 'Outro',
+  className: 'bg-gray-100 text-gray-600 border-gray-200',
+  icon: Tag,
+}
+
 interface CategoryBadgeProps {
-  category: Category
+  category: string
 }
 
 export function CategoryBadge({ category }: CategoryBadgeProps) {
-  const { label, className } = categoryConfig[category]
+  const config = categoryConfig[category as Category] ?? fallbackConfig
   return (
-    <Badge variant="outline" className={`px-3 py-1 ${className}`}>
-      {label}
+    <Badge variant="outline" className={`px-3 py-1 ${config.className}`}>
+      {config.label}
     </Badge>
   )
 }
 
 export function CategoryIconBadge({ category }: CategoryBadgeProps) {
-  const { icon: Icon, className } = categoryConfig[category]
+  const { icon: Icon, className } = categoryConfig[category as Category] ?? fallbackConfig
   return (
     <span
       className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border ${className}`}

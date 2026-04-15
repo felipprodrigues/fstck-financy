@@ -13,7 +13,9 @@ export function Layout({ children }: LayoutProps) {
   const isPublic = PUBLIC_ROUTES.includes(pathname)
 
   return (
-    <div className={`min-h-screen bg-gray-100 ${isPublic ? 'flex items-center justify-center' : ''}`}>
+    <div
+      className={`min-h-screen bg-gray-100 ${isPublic ? 'flex items-center justify-center' : ''}`}
+    >
       {!isPublic && <Header />}
       <main className={isPublic ? 'w-full max-w-sm' : 'w-full px-6 py-4'}>{children}</main>
     </div>

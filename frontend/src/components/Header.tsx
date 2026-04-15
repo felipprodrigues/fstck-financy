@@ -1,12 +1,10 @@
-// import { useAuthStore } from '@/stores/auth'
 import { AvatarComponent } from '@/shared/AvatarComponent'
+import { useAuthStore } from '@/store/auth.store'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from './ui/button'
 
 export function Header() {
-  // const { user, isAuthenticated, logout } = useAuthStore()
-  const isAuthenticated = true
-  const user = 'JT'
+  const { user, isAuthenticated } = useAuthStore()
   const location = useLocation()
 
   const isDashboard = location.pathname === '/'
@@ -37,7 +35,7 @@ export function Header() {
             </Link>
           </nav>
 
-          <AvatarComponent userName={user || ''} />
+          <AvatarComponent userName={user?.name || ''} />
         </div>
       )}
     </header>

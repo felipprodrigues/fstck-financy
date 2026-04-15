@@ -10,42 +10,71 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { categoryConfig, CategoryIconBadge } from '@/shared/CategoryBadge'
-import type { Category } from '@/shared/CategoryBadge'
+import type { Category as CategorySymbol } from '@/shared/CategoryBadge'
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { useCreateCategory, useUpdateCategory } from './useCategories'
+import type { CategoryFormValues, CategoryInitialValues } from './types'
 
-const allCategories = Object.keys(categoryConfig) as Category[]
-
-interface CategoryFormValues {
-  title: string
-  subtitle: string
-  icon: Category | null
-}
+const allCategories = Object.keys(categoryConfig) as CategorySymbol[]
 
 interface NewCategoryDialogProps {
-  trigger: React.ReactNode
-  initialValues?: CategoryFormValues
+  trigger: React.ReactElement
   mode?: 'create' | 'edit'
-  onSave?: (values: CategoryFormValues) => void
+  initialValues?: CategoryInitialValues
+  categoryId?: string
 }
 
 const labelClass = 'text-sm font-medium text-gray-700'
 
 export function NewCategoryDialog({
   trigger,
-  initialValues,
   mode = 'create',
-  onSave,
+  initialValues,
+  categoryId,
 }: NewCategoryDialogProps) {
-  const [title, setTitle] = useState(initialValues?.title ?? '')
-  const [subtitle, setSubtitle] = useState(initialValues?.subtitle ?? '')
-  const [selectedIcon, setSelectedIcon] = useState<Category | null>(initialValues?.icon ?? null)
+  const [open, setOpen] = useState(false)
 
-  function handleSave() {
-    onSave?.({ title, subtitle, icon: selectedIcon })
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<CategoryFormValues>({
+    defaultValues: {
+      name: initialValues?.title ?? '',
+      description: initialValues?.subtitle ?? '',
+      symbol: initialValues?.icon ?? null,
+    },
+  })
+
+  const selectedSymbol = watch('symbol')
+
+  const createCategory = useCreateCategory()
+  const updateCategory = useUpdateCategory()
+
+  const isPending = createCategory.isPending || updateCategory.isPending
+  const error = createCategory.error ?? updateCategory.error
+
+  const onSubmit = (values: CategoryFormValues) => {
+    if (!values.symbol) return
+    const data = { name: values.name, description: values.description, symbol: values.symbol }
+
+    if (mode === 'edit' && categoryId) {
+      updateCategory.mutate({ id: categoryId, ...data }, {
+        onSuccess: () => { reset(); setOpen(false) },
+      })
+    } else {
+      createCategory.mutate(data, {
+        onSuccess: () => { reset(); setOpen(false) },
+      })
+    }
   }
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger} />
       <DialogContent className="flex flex-col gap-6 sm:max-w-md">
         <DialogHeader>
@@ -55,57 +84,68 @@ export function NewCategoryDialog({
           <DialogDescription>Organize suas transações com categorias</DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-1.5">
-            <label className={labelClass}>Título</label>
-            <Input
-              className="text-sm"
-              placeholder="Ex: Alimentação"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-1.5">
-              <label className={labelClass}>Descrição</label>
-              <span className="text-xs text-gray-400">(opcional)</span>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-1.5">
+              <label className={labelClass}>Título</label>
+              <Input
+                className="text-sm"
+                placeholder="Ex: Alimentação"
+                {...register('name', { required: 'Título obrigatório' })}
+              />
+              {errors.name && (
+                <span className="text-xs text-red-500">{errors.name.message}</span>
+              )}
             </div>
-            <Input
-              className="text-sm"
-              placeholder="Descrição da categoria"
-              value={subtitle}
-              onChange={(e) => setSubtitle(e.target.value)}
-            />
-          </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className={labelClass}>Ícone</label>
-            <div className="grid grid-cols-5 justify-items-center gap-2">
-              {allCategories.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedIcon(cat)}
-                  className={`w-fit rounded-xl p-1 transition-colors ${
-                    selectedIcon === cat ? 'bg-gray-200' : 'hover:bg-gray-100'
-                  }`}
-                >
-                  <CategoryIconBadge category={cat} />
-                </button>
-              ))}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <label className={labelClass}>Descrição</label>
+                <span className="text-xs text-gray-400">(opcional)</span>
+              </div>
+              <Input
+                className="text-sm"
+                placeholder="Descrição da categoria"
+                {...register('description')}
+              />
             </div>
-          </div>
-        </div>
 
-        <DialogFooter className="border-0 bg-transparent mt-2">
-          <Button
-            className="w-full bg-brand-base text-base font-medium hover:bg-brand-dark sm:w-full h-auto px-4 py-3"
-            onClick={handleSave}
-          >
-            Salvar
-          </Button>
-        </DialogFooter>
+            <div className="flex flex-col gap-1.5">
+              <label className={labelClass}>Ícone</label>
+              <div className="grid grid-cols-5 justify-items-center gap-2">
+                {allCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setValue('symbol', cat)}
+                    className={`w-fit rounded-xl p-1 transition-colors ${
+                      selectedSymbol === cat ? 'bg-gray-200' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <CategoryIconBadge category={cat} />
+                  </button>
+                ))}
+              </div>
+              {!selectedSymbol && errors.symbol && (
+                <span className="text-xs text-red-500">Selecione um ícone</span>
+              )}
+            </div>
+
+            {error && (
+              <span className="text-xs text-red-500 text-center">{error.message}</span>
+            )}
+          </div>
+
+          <DialogFooter className="border-0 bg-transparent mt-6">
+            <Button
+              type="submit"
+              className="w-full bg-brand-base text-base font-medium hover:bg-brand-dark sm:w-full h-auto px-4 py-3"
+              disabled={isPending || !selectedSymbol}
+            >
+              {isPending ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
