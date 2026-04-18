@@ -78,5 +78,5 @@ App runs at `http://localhost:5173`.
 Create a `.env` file at the root of the frontend folder:
 
 ```env
-VITE_API_URL=http://localhost:4000/graphql
+VITE_GRAPHQL_URL=http://localhost:4000/graphql
 ```
